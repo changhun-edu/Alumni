@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 광주사범.사대.교육대학교 총동문회 대의원회 준비 체크리스트</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-3 sm:p-4 md:p-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-3xl shadow-xl p-5 sm:p-6 md:p-8 mb-6 md:mb-8 border border-slate-200">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-slate-800 mb-3 leading-snug">
+        2026 광주사범.사대.교육대학교 총동문회 대의원회 준비 체크리스트
+      </h1>
+      <p class="text-center text-slate-500 text-sm sm:text-base md:text-lg leading-relaxed">
+        진행 상황을 체크하며 준비 업무를 관리하세요.
+      </p>
+    </div>
+
+    <div id="sections" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6"></div>
+  </div>
+
+  <script>
+    const sections = [
+      {
+        title: '1. 행사 기본 계획',
+        color: 'bg-red-500',
+        items: [
+          '일시·장소 확정',
+          '참석 대상 및 예상 인원 파악',
+          '예산 계획 수립',
+          '전체 진행 시나리오 작성',
+        ],
+      },
+      {
+        title: '2. 안내 및 소통',
+        color: 'bg-cyan-500',
+        items: [
+          '대의원 초청 공지 발송',
+          '참석 여부 회신 확인',
+          '일정표 및 준비사항 전달',
+        ],
+      },
+      {
+        title: '3. 장소 및 물품 준비',
+        color: 'bg-blue-500',
+        items: [
+          '회의실 예약 및 좌석 배치',
+          '대의원명부·회의 자료 준비',
+          '마이크·프로젝터·음향 점검',
+          '현수막·기념품 비치',
+        ],
+      },
+      {
+        title: '4. 행정 및 처리 준비',
+        color: 'bg-lime-500',
+        items: [
+          '식순표 배부 및 서명 확인',
+          '감사 자료 준비',
+          '회의록 작성 양식 준비',
+          '긴급·추가 안건 기록지 준비',
+        ],
+      },
+      {
+        title: '5. 당일 운영 체크',
+        color: 'bg-indigo-500',
+        items: [
+          '등록 데스크 운영 준비',
+          '개회·보고·안건 심의 순서 확인',
+          '내빈 및 발표자 동선 점검',
+          '사진 촬영 및 안내 진행',
+        ],
+      },
+      {
+        title: '6. 회의 후 정리',
+        color: 'bg-yellow-500',
+        items: [
+          '회의록 작성 및 공유',
+          '결과보고 후속 조치 정리',
+          '예산 정산 및 증빙 정리',
+          '감사 인사 및 차기 안내 발송',
+        ],
+      },
+    ];
+
+    const container = document.getElementById('sections');
+
+    sections.forEach((section, sectionIndex) => {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-200 hover:shadow-xl transition-all';
+
+      const total = section.items.length;
+
+      card.innerHTML = `
+        <div class="${section.color} px-4 sm:px-5 md:px-6 py-4">
+          <h2 class="text-lg sm:text-xl font-bold text-white leading-snug">${section.title}</h2>
+        </div>
+
+        <div class="px-4 sm:px-5 md:px-6 pt-5">
+          <div class="flex justify-between items-center mb-2 text-sm font-semibold text-slate-600">
+            <span>업무 완료율</span>
+            <span id="progress-text-${sectionIndex}">0%</span>
+          </div>
+
+          <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+            <div id="progress-bar-${sectionIndex}" class="h-3 bg-green-500 rounded-full transition-all duration-300" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="p-4 sm:p-5 md:p-6 space-y-4">
+          ${section.items
+            .map(
+              (item, itemIndex) => `
+            <div class="p-3 sm:p-4 rounded-2xl border border-slate-200 bg-slate-50 active:scale-\[0\.99\] transition-transform">
+              <div class="flex items-start gap-3 mb-3 touch-manipulation">
+                <input
+                  type="checkbox"
+                  class="task-checkbox mt-1 w-6 h-6 accent-slate-700 shrink-0"
+                  data-section="${sectionIndex}"
+                />
+
+                <span class="task-text text-slate-700 text-sm sm:text-base leading-relaxed flex-1 break-words">
+                  ${item}
+                </span>
+              </div>
+
+              <input
+                type="text"
+                placeholder="담당자 입력"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-slate-400"
+              />
+            </div>
+          `
+            )
+            .join('')}
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+
+    function updateProgress(sectionIndex) {
+      const checkboxes = document.querySelectorAll(
+        `.task-checkbox[data-section='${sectionIndex}']`
+      );
+
+      const checked = [...checkboxes].filter(cb => cb.checked).length;
+      const percent = Math.round((checked / checkboxes.length) * 100);
+
+      document.getElementById(`progress-bar-${sectionIndex}`).style.width = `${percent}%`;
+      document.getElementById(`progress-text-${sectionIndex}`).innerText = `${percent}%`;
+    }
+
+    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', e => {
+        const taskText = e.target.parentElement.querySelector('.task-text');
+
+        if (e.target.checked) {
+          taskText.classList.add('line-through', 'text-slate-400');
+        } else {
+          taskText.classList.remove('line-through', 'text-slate-400');
+        }
+
+        updateProgress(e.target.dataset.section);
+      });
+    });
+  </script>
+</body>
+</html>
