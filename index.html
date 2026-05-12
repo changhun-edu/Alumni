@@ -26,17 +26,24 @@
       appId: 'YOUR_APP_ID',
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const checklistRef = doc(db, 'sharedChecklist', '2026-gwangju-alumni');
+    // Firebase 설정 전에는 오류 없이 기본 체크리스트만 동작하도록 처리
+    const firebaseReady = !firebaseConfig.apiKey.includes('YOUR_API_KEY');
 
-    window.firebaseDB = {
-      db,
-      checklistRef,
-      setDoc,
-      getDoc,
-      onSnapshot,
-    };
+    if (firebaseReady) {
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const checklistRef = doc(db, 'sharedChecklist', '2026-gwangju-alumni');
+
+      window.firebaseDB = {
+        db,
+        checklistRef,
+        setDoc,
+        getDoc,
+        onSnapshot,
+      };
+    } else {
+      console.warn('Firebase 설정값이 없어 로컬 모드로 실행됩니다.');
+    }
   </script>
 </head>
 <body class="bg-slate-100 min-h-screen p-3 sm:p-4 md:p-6">
@@ -293,7 +300,6 @@
     }
 
     loadSharedData();
-    });
   </script>
 </body>
 </html>
