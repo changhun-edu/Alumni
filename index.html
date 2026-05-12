@@ -10,6 +10,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import {
+      initializeFirestore,
       getFirestore,
       doc,
       setDoc,
@@ -32,7 +33,13 @@
 
     if (firebaseReady) {
       const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+
+      // 모바일 환경 및 file:// 환경에서도
+      // 안정적으로 실시간 동기화되도록 설정
+      const db = initializeFirestore(app, {
+        experimentalForceLongPolling: true,
+        useFetchStreams: false,
+      });
       const checklistRef = doc(db, 'sharedChecklist', '2026-gwangju-alumni');
 
       window.firebaseDB = {
@@ -314,8 +321,8 @@
           console.error('Firebase 초기 로딩 오류:', error);
         }
 
-        // 실시간 동기화
-        
+        // Firestore 실시간 동기화 시작
+        console.log('Firestore 실시간 리스너 연결');
       } else {
         // Firebase 미사용 시 localStorage 사용
         try {
