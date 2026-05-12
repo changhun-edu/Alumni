@@ -19,16 +19,16 @@
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
     const firebaseConfig = {
-      apiKey: '실제 Firebase apiKey 입력 필요',
+      apiKey: 'AIzaSyBDobPJdK26LOV5jkG28VDpRmX5VzfF-4M',
       authDomain: 'gwangju-alumni-checklist.firebaseapp.com',
       projectId: 'gwangju-alumni-checklist',
       storageBucket: 'gwangju-alumni-checklist.appspot.com',
-      messagingSenderId: 'YOUR_SENDER_ID',
-      appId: 'YOUR_APP_ID',
+      messagingSenderId: '791997123131',
+      appId: '1:791997123131:web:06ba47daa6d2576e1bea1e',
     };
 
     // Firebase 설정 전에는 오류 없이 기본 체크리스트만 동작하도록 처리
-    const firebaseReady = !firebaseConfig.apiKey.includes('실제 Firebase apiKey 입력 필요');
+    const firebaseReady = true;
 
     if (firebaseReady) {
       const app = initializeApp(firebaseConfig);
