@@ -19,7 +19,7 @@
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
     const firebaseConfig = {
-      apiKey: '여기에 Firebase apiKey 입력',
+      apiKey: '실제 Firebase apiKey 입력 필요',
       authDomain: 'gwangju-alumni-checklist.firebaseapp.com',
       projectId: 'gwangju-alumni-checklist',
       storageBucket: 'gwangju-alumni-checklist.appspot.com',
@@ -28,7 +28,7 @@
     };
 
     // Firebase 설정 전에는 오류 없이 기본 체크리스트만 동작하도록 처리
-    const firebaseReady = !firebaseConfig.apiKey.includes('여기에 Firebase apiKey 입력');
+    const firebaseReady = !firebaseConfig.apiKey.includes('실제 Firebase apiKey 입력 필요');
 
     if (firebaseReady) {
       const app = initializeApp(firebaseConfig);
@@ -44,7 +44,7 @@
         onSnapshot,
       };
     } else {
-      console.warn('Firebase 설정값이 없어 로컬 모드로 실행됩니다.');
+      console.warn('Firebase 설정값이 없어 로컬 모드로 실행됩니다. 여러 기기 공유가 되지 않습니다.');
     }
   </script>
 </head>
@@ -285,19 +285,47 @@
     });
 
     async function loadSharedData() {
-      // 1차: localStorage 로딩
-      try {
-        const localData = localStorage.getItem('gwangju-alumni-checklist');
+      // Firebase 사용 가능 여부 우선 확인
+      // 여러 기기 공유를 위해 Firebase 데이터를 우선 사용
 
-        if (localData) {
-          sharedData = JSON.parse(localData);
-          applySharedData();
+      if (window.firebaseDB) {
+        try {
+          const remoteDoc = await window.firebaseDB.getDoc(
+            window.firebaseDB.checklistRef
+          );
+
+          if (remoteDoc.exists()) {
+            const remoteData = remoteDoc.data();
+
+            if (remoteData && remoteData.data) {
+              sharedData = remoteData.data;
+
+              localStorage.setItem(
+                'gwangju-alumni-checklist',
+                JSON.stringify(sharedData)
+              );
+
+              applySharedData();
+            }
+          }
+        } catch (error) {
+          console.error('Firebase 초기 로딩 오류:', error);
         }
-      } catch (error) {
-        console.error('로컬 데이터 로딩 오류:', error);
+      } else {
+        // Firebase 미사용 시 localStorage 사용
+        try {
+          const localData = localStorage.getItem('gwangju-alumni-checklist');
+
+          if (localData) {
+            sharedData = JSON.parse(localData);
+            applySharedData();
+          }
+        } catch (error) {
+          console.error('로컬 데이터 로딩 오류:', error);
+        }
       }
 
-      // 2차: Firebase 실시간 동기화
+      // Firebase 실시간 동기화
       if (!window.firebaseDB) return;
 
       window.firebaseDB.onSnapshot(window.firebaseDB.checklistRef, snapshot => {
