@@ -13,21 +13,22 @@
       getFirestore,
       doc,
       setDoc,
+      updateDoc,
       getDoc,
       onSnapshot,
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
     const firebaseConfig = {
-      apiKey: 'YOUR_API_KEY',
-      authDomain: 'YOUR_PROJECT.firebaseapp.com',
-      projectId: 'YOUR_PROJECT_ID',
-      storageBucket: 'YOUR_PROJECT.appspot.com',
+      apiKey: '여기에 Firebase apiKey 입력',
+      authDomain: 'gwangju-alumni-checklist.firebaseapp.com',
+      projectId: 'gwangju-alumni-checklist',
+      storageBucket: 'gwangju-alumni-checklist.appspot.com',
       messagingSenderId: 'YOUR_SENDER_ID',
       appId: 'YOUR_APP_ID',
     };
 
     // Firebase 설정 전에는 오류 없이 기본 체크리스트만 동작하도록 처리
-    const firebaseReady = !firebaseConfig.apiKey.includes('YOUR_API_KEY');
+    const firebaseReady = !firebaseConfig.apiKey.includes('여기에 Firebase apiKey 입력');
 
     if (firebaseReady) {
       const app = initializeApp(firebaseConfig);
@@ -38,6 +39,7 @@
         db,
         checklistRef,
         setDoc,
+        updateDoc,
         getDoc,
         onSnapshot,
       };
@@ -200,20 +202,40 @@
       return `${sectionIndex}-${itemIndex}`;
     }
 
-    async function saveData() {
-      if (!window.firebaseDB) return;
+    async function saveData(key = null, value = null) {
+      // Firebase 저장
+      if (window.firebaseDB) {
+        try {
+          await window.firebaseDB.setDoc(
+            window.firebaseDB.checklistRef,
+            {
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
 
+          if (key && value) {
+            await window.firebaseDB.updateDoc(
+              window.firebaseDB.checklistRef,
+              {
+                [`data.${key}`]: value,
+                updatedAt: new Date().toISOString(),
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Firebase 저장 오류:', error);
+        }
+      }
+
+      // 브라우저 로컬 저장
       try {
-        await window.firebaseDB.setDoc(
-          window.firebaseDB.checklistRef,
-          {
-            updatedAt: new Date().toISOString(),
-            data: sharedData,
-          },
-          { merge: true }
+        localStorage.setItem(
+          'gwangju-alumni-checklist',
+          JSON.stringify(sharedData)
         );
       } catch (error) {
-        console.error('저장 오류:', error);
+        console.error('로컬 저장 오류:', error);
       }
     }
 
@@ -242,7 +264,7 @@
         applyTaskStyle(e.target, taskText);
         updateProgress(section);
 
-        await saveData();
+        await saveData(key, sharedData[key]);
       });
     });
 
@@ -258,11 +280,24 @@
 
         sharedData[key].manager = e.target.value;
 
-        await saveData();
+        await saveData(key, sharedData[key]);
       });
     });
 
     async function loadSharedData() {
+      // 1차: localStorage 로딩
+      try {
+        const localData = localStorage.getItem('gwangju-alumni-checklist');
+
+        if (localData) {
+          sharedData = JSON.parse(localData);
+          applySharedData();
+        }
+      } catch (error) {
+        console.error('로컬 데이터 로딩 오류:', error);
+      }
+
+      // 2차: Firebase 실시간 동기화
       if (!window.firebaseDB) return;
 
       window.firebaseDB.onSnapshot(window.firebaseDB.checklistRef, snapshot => {
@@ -272,30 +307,39 @@
 
         sharedData = docData.data;
 
-        Object.keys(sharedData).forEach(key => {
-          const [section, item] = key.split('-');
+        localStorage.setItem(
+          'gwangju-alumni-checklist',
+          JSON.stringify(sharedData)
+        );
 
-          const checkbox = document.querySelector(
-            `.task-checkbox[data-section='${section}'][data-item='${item}']`
-          );
+        applySharedData();
+      });
+    }
 
-          const managerInput = document.querySelector(
-            `.manager-input[data-section='${section}'][data-item='${item}']`
-          );
+    function applySharedData() {
+      Object.keys(sharedData).forEach(key => {
+        const [section, item] = key.split('-');
 
-          if (checkbox) {
-            checkbox.checked = !!sharedData[key].checked;
+        const checkbox = document.querySelector(
+          `.task-checkbox[data-section='${section}'][data-item='${item}']`
+        );
 
-            const taskText = checkbox.parentElement.querySelector('.task-text');
-            applyTaskStyle(checkbox, taskText);
+        const managerInput = document.querySelector(
+          `.manager-input[data-section='${section}'][data-item='${item}']`
+        );
 
-            updateProgress(section);
-          }
+        if (checkbox) {
+          checkbox.checked = !!sharedData[key].checked;
 
-          if (managerInput && sharedData[key].manager) {
-            managerInput.value = sharedData[key].manager;
-          }
-        });
+          const taskText = checkbox.parentElement.querySelector('.task-text');
+          applyTaskStyle(checkbox, taskText);
+
+          updateProgress(section);
+        }
+
+        if (managerInput) {
+          managerInput.value = sharedData[key].manager || '';
+        }
       });
     }
 
