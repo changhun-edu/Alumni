@@ -216,7 +216,7 @@
             { merge: true }
           );
 
-          if (key && value) {
+          if (key !== null && value !== null) {
             await window.firebaseDB.updateDoc(
               window.firebaseDB.checklistRef,
               {
@@ -263,7 +263,9 @@
           sharedData[key] = {};
         }
 
-        sharedData[key].checked = e.target.checked;
+        sharedData[key].checked = Boolean(e.target.checked);
+
+        console.log('체크 상태 저장:', key, sharedData[key]);
 
         applyTaskStyle(e.target, taskText);
         updateProgress(section);
@@ -330,11 +332,14 @@
       if (!window.firebaseDB) return;
 
       window.firebaseDB.onSnapshot(window.firebaseDB.checklistRef, snapshot => {
+        console.log('Firebase 실시간 데이터 수신');
         const docData = snapshot.data();
 
         if (!docData || !docData.data) return;
 
         sharedData = docData.data;
+
+        console.log('동기화 데이터:', sharedData);
 
         localStorage.setItem(
           'gwangju-alumni-checklist',
