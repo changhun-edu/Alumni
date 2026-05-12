@@ -5,6 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>2026 광주사범.사대.교육대학교 총동문회 대의원회 준비 체크리스트</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      onSnapshot,
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: 'YOUR_API_KEY',
+      authDomain: 'YOUR_PROJECT.firebaseapp.com',
+      projectId: 'YOUR_PROJECT_ID',
+      storageBucket: 'YOUR_PROJECT.appspot.com',
+      messagingSenderId: 'YOUR_SENDER_ID',
+      appId: 'YOUR_APP_ID',
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const checklistRef = doc(db, 'sharedChecklist', '2026-gwangju-alumni');
+
+    window.firebaseDB = {
+      db,
+      checklistRef,
+      setDoc,
+      getDoc,
+      onSnapshot,
+    };
+  </script>
 </head>
 <body class="bg-slate-100 min-h-screen p-3 sm:p-4 md:p-6">
   <div class="max-w-7xl mx-auto">
@@ -85,6 +118,8 @@
 
     const container = document.getElementById('sections');
 
+    let sharedData = {};
+
     sections.forEach((section, sectionIndex) => {
       const card = document.createElement('div');
       card.className = 'bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-200 hover:shadow-xl transition-all';
@@ -117,6 +152,7 @@
                   type="checkbox"
                   class="task-checkbox mt-1 w-6 h-6 accent-slate-700 shrink-0"
                   data-section="${sectionIndex}"
+                  data-item="${itemIndex}"
                 />
 
                 <span class="task-text text-slate-700 text-sm sm:text-base leading-relaxed flex-1 break-words">
@@ -127,7 +163,9 @@
               <input
                 type="text"
                 placeholder="담당자 입력"
-                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-slate-400"
+                data-section="${sectionIndex}"
+                data-item="${itemIndex}"
+                class="manager-input w-full rounded-xl border border-slate-300 px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </div>
           `
@@ -151,18 +189,110 @@
       document.getElementById(`progress-text-${sectionIndex}`).innerText = `${percent}%`;
     }
 
+    function getKey(sectionIndex, itemIndex) {
+      return `${sectionIndex}-${itemIndex}`;
+    }
+
+    async function saveData() {
+      if (!window.firebaseDB) return;
+
+      try {
+        await window.firebaseDB.setDoc(
+          window.firebaseDB.checklistRef,
+          {
+            updatedAt: new Date().toISOString(),
+            data: sharedData,
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error('저장 오류:', error);
+      }
+    }
+
+    function applyTaskStyle(checkbox, taskText) {
+      if (checkbox.checked) {
+        taskText.classList.add('line-through', 'text-slate-400');
+      } else {
+        taskText.classList.remove('line-through', 'text-slate-400');
+      }
+    }
+
     document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-      checkbox.addEventListener('change', e => {
+      checkbox.addEventListener('change', async e => {
+        const section = e.target.dataset.section;
+        const item = e.target.dataset.item;
+        const key = getKey(section, item);
+
         const taskText = e.target.parentElement.querySelector('.task-text');
 
-        if (e.target.checked) {
-          taskText.classList.add('line-through', 'text-slate-400');
-        } else {
-          taskText.classList.remove('line-through', 'text-slate-400');
+        if (!sharedData[key]) {
+          sharedData[key] = {};
         }
 
-        updateProgress(e.target.dataset.section);
+        sharedData[key].checked = e.target.checked;
+
+        applyTaskStyle(e.target, taskText);
+        updateProgress(section);
+
+        await saveData();
       });
+    });
+
+    document.querySelectorAll('.manager-input').forEach(input => {
+      input.addEventListener('input', async e => {
+        const section = e.target.dataset.section;
+        const item = e.target.dataset.item;
+        const key = getKey(section, item);
+
+        if (!sharedData[key]) {
+          sharedData[key] = {};
+        }
+
+        sharedData[key].manager = e.target.value;
+
+        await saveData();
+      });
+    });
+
+    async function loadSharedData() {
+      if (!window.firebaseDB) return;
+
+      window.firebaseDB.onSnapshot(window.firebaseDB.checklistRef, snapshot => {
+        const docData = snapshot.data();
+
+        if (!docData || !docData.data) return;
+
+        sharedData = docData.data;
+
+        Object.keys(sharedData).forEach(key => {
+          const [section, item] = key.split('-');
+
+          const checkbox = document.querySelector(
+            `.task-checkbox[data-section='${section}'][data-item='${item}']`
+          );
+
+          const managerInput = document.querySelector(
+            `.manager-input[data-section='${section}'][data-item='${item}']`
+          );
+
+          if (checkbox) {
+            checkbox.checked = !!sharedData[key].checked;
+
+            const taskText = checkbox.parentElement.querySelector('.task-text');
+            applyTaskStyle(checkbox, taskText);
+
+            updateProgress(section);
+          }
+
+          if (managerInput && sharedData[key].manager) {
+            managerInput.value = sharedData[key].manager;
+          }
+        });
+      });
+    }
+
+    loadSharedData();
     });
   </script>
 </body>
